@@ -1,6 +1,7 @@
 val platform: String by project
 val armArch: String by project
 val iosSigningIdentity: String by project
+val buildType: String? by project
 
 buildscript {
     repositories {
@@ -26,6 +27,16 @@ repositories {
     jcenter()
 }
 
+configure<org.godotengine.kotlin.gradleplugin.KotlinGodotPluginExtension> {
+    this.releaseType = if (buildType?.toLowerCase() == "release") {
+        org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType.RELEASE
+    } else {
+        org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType.DEBUG
+    }
+    this.godotProjectPath = "${project.rootDir.absolutePath}/../demo"
+    this.libraryPath = "addons/godot-kotlin-sqlite/bin/SQLiteWrapper.gdnlib"
+}
+
 kotlin {
     sourceSets {
         sourceSets.create("macosMain")
@@ -45,29 +56,6 @@ kotlin {
                 sourceSets["iosX64Main"]
         )) {
             this.kotlin.srcDir("src/main/kotlin")
-        }
-
-        configure<org.godotengine.kotlin.gradleplugin.ConfigureGodotConvention> {
-            this.configureGodot(listOf(
-                    sourceSets["macosMain"],
-                    sourceSets["linuxMain"],
-                    sourceSets["windowsMain"],
-                    sourceSets["androidArm64Main"],
-                    sourceSets["androidX64Main"],
-                    sourceSets["iosArm64Main"],
-                    sourceSets["iosX64Main"]
-            )) {
-                sourceSet {
-                    kotlin.srcDirs("src/main/kotlin")
-                }
-
-                libraryPath("addons/godot-kotlin-sqlite/bin/SQLiteWrapper.gdnlib")
-                generateGDNS("${project.rootDir.absolutePath}/../demo")
-
-                configs(
-                        "src/main/kotlin/classes.json"
-                )
-            }
         }
     }
 
@@ -114,13 +102,10 @@ kotlin {
                         includeDirs("src/main/c_interop")
                     }
                 }
-                this.target.binaries {
-                    sharedLib(listOf(org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType.DEBUG))
-                }
                 this.target.compilations.all {
                     dependencies {
                         implementation("org.godotengine.kotlin:godot-library:1.0.0")
-                        implementation("org.godotengine.kotlin:annotations:0.0.1")
+                        implementation("org.godotengine.kotlin:annotations:0.0.2")
                     }
                 }
                 if (project.hasProperty("iosSigningIdentity") && this.target.name == "iosArm64") {
